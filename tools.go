@@ -7,10 +7,10 @@ import (
 
 // ToolDefinition models an MCP tool callable by an LLM or agent.
 type ToolDefinition struct {
-	Name        string                                                              `json:"name"`
-	Description string                                                              `json:"description"`
-	InputSchema map[string]any                                                      `json:"inputSchema"`
-	Permission  string                                                              `json:"permission,omitempty"`
+	Name        string                                                                 `json:"name"`
+	Description string                                                                 `json:"description"`
+	InputSchema map[string]any                                                         `json:"inputSchema"`
+	Permission  string                                                                 `json:"permission,omitempty"`
 	Handler     func(ctx context.Context, args json.RawMessage) ([]ContentItem, error) `json:"-"`
 }
 

@@ -6,11 +6,11 @@ import (
 
 // ResourceDefinition models a read-only document, schema, or system state.
 type ResourceDefinition struct {
-	URI         string                                                        `json:"uri"`
-	Name        string                                                        `json:"name"`
-	Description string                                                        `json:"description"`
-	MimeType    string                                                        `json:"mimeType"`
-	Permission  string                                                        `json:"permission,omitempty"`
+	URI         string                                                              `json:"uri"`
+	Name        string                                                              `json:"name"`
+	Description string                                                              `json:"description"`
+	MimeType    string                                                              `json:"mimeType"`
+	Permission  string                                                              `json:"permission,omitempty"`
 	Reader      func(ctx context.Context, uri string) ([]ResourceContentItem, error) `json:"-"`
 }
 

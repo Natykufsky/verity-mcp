@@ -13,10 +13,10 @@ type PromptArgument struct {
 
 // PromptDefinition defines an interactive prompt workflow exposed over MCP.
 type PromptDefinition struct {
-	Name        string                                                                 `json:"name"`
-	Description string                                                                 `json:"description"`
-	Arguments   []PromptArgument                                                       `json:"arguments,omitempty"`
-	Permission  string                                                                 `json:"permission,omitempty"`
+	Name        string                                                                    `json:"name"`
+	Description string                                                                    `json:"description"`
+	Arguments   []PromptArgument                                                          `json:"arguments,omitempty"`
+	Permission  string                                                                    `json:"permission,omitempty"`
 	Handler     func(ctx context.Context, args map[string]string) ([]PromptMessage, error) `json:"-"`
 }
 

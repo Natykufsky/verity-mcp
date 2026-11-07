@@ -79,7 +79,7 @@ func (s *Server) RegisterPrompt(prompt PromptDefinition) {
 	s.prompts[prompt.Name] = prompt
 }
 
-// HandleMessage processes a raw JSON-RPC 2.0 message (single or batch) and returns responses.
+// HandleMessage processes a raw JSON-RPC 2.0 message (single or batch).
 func (s *Server) HandleMessage(ctx context.Context, data []byte) ([]byte, error) {
 	trimmed := bytes.TrimSpace(data)
 	if len(trimmed) == 0 {
@@ -112,9 +112,8 @@ func (s *Server) HandleMessage(ctx context.Context, data []byte) ([]byte, error)
 				responses = append(responses, *resp)
 			}
 		}
-
 		if len(responses) == 0 {
-			return nil, nil // All were notifications
+			return nil, nil
 		}
 		return json.Marshal(responses)
 	}
@@ -130,7 +129,7 @@ func (s *Server) HandleMessage(ctx context.Context, data []byte) ([]byte, error)
 
 	resp := s.dispatch(ctx, req)
 	if resp == nil {
-		return nil, nil // Notification
+		return nil, nil
 	}
 	return json.Marshal(resp)
 }
@@ -235,6 +234,17 @@ func (s *Server) dispatch(ctx context.Context, req Request) *Response {
 			}
 		}
 
+		// FIX: guard against nil handler.
+		if tool.Handler == nil {
+			return &Response{
+				ID: id,
+				Result: ToolCallResult{
+					Content: []ContentItem{{Type: "text", Text: fmt.Sprintf("Tool %q has no handler registered", params.Name)}},
+					IsError: true,
+				},
+			}
+		}
+
 		content, err := tool.Handler(ctx, params.Arguments)
 		if err != nil {
 			return &Response{
@@ -298,6 +308,14 @@ func (s *Server) dispatch(ctx context.Context, req Request) *Response {
 			}
 		}
 
+		// FIX: guard against nil reader.
+		if res.Reader == nil {
+			return &Response{
+				ID:    id,
+				Error: &Error{Code: CodeInternalError, Message: fmt.Sprintf("Resource %q has no reader registered", params.URI)},
+			}
+		}
+
 		contents, err := res.Reader(ctx, params.URI)
 		if err != nil {
 			return &Response{
@@ -357,6 +375,14 @@ func (s *Server) dispatch(ctx context.Context, req Request) *Response {
 			}
 		}
 
+		// FIX: guard against nil handler.
+		if p.Handler == nil {
+			return &Response{
+				ID:    id,
+				Error: &Error{Code: CodeInternalError, Message: fmt.Sprintf("Prompt %q has no handler registered", params.Name)},
+			}
+		}
+
 		messages, err := p.Handler(ctx, params.Arguments)
 		if err != nil {
 			return &Response{
@@ -377,21 +403,19 @@ func (s *Server) dispatch(ctx context.Context, req Request) *Response {
 	}
 }
 
-// HTTPHandler returns a standard net/http handler supporting standard HTTP POST and SSE streams.
+// HTTPHandler returns a standard net/http handler supporting POST JSON-RPC.
 func (s *Server) HTTPHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Handle Server-Sent Events (SSE) mode for desktop and web agent connections
 		if r.Method == http.MethodGet && strings.Contains(r.Header.Get("Accept"), "text/event-stream") {
 			s.handleSSE(w, r)
 			return
 		}
-
 		if r.Method != http.MethodPost {
 			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 			return
 		}
 
-		r.Body = http.MaxBytesReader(w, r.Body, 2<<20) // 2MB limit
+		r.Body = http.MaxBytesReader(w, r.Body, 2<<20)
 		data, err := io.ReadAll(r.Body)
 		if err != nil {
 			var maxErr *http.MaxBytesError
@@ -413,32 +437,28 @@ func (s *Server) HTTPHandler() http.HandlerFunc {
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
 		}
-
 		if len(out) == 0 {
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
-
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write(out)
 	}
 }
 
-// handleSSE serves an SSE stream conforming to standard MCP SSE transport.
+// handleSSE is a stub SSE endpoint (endpoint event only, no streaming).
 func (s *Server) handleSSE(w http.ResponseWriter, r *http.Request) {
 	flusher, ok := w.(http.Flusher)
 	if !ok {
 		http.Error(w, "Streaming unsupported", http.StatusInternalServerError)
 		return
 	}
-
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
-	// Emit initial endpoint announcement event per MCP SSE spec
 	endpointURI := r.URL.Path
 	_, _ = fmt.Fprintf(w, "event: endpoint\ndata: %s\n\n", endpointURI)
 	flusher.Flush()

@@ -72,7 +72,7 @@ func TestMCPLibrary_Tools(t *testing.T) {
 		t.Errorf("tools/list filter failed, got: %+v", listResp.Result.Tools)
 	}
 
-	// 2. Call tool
+	// 2. Call allowed tool
 	callReq := `{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"allowed_tool","arguments":{}}}`
 	callOut, err := srv.HandleMessage(ctx, []byte(callReq))
 	if err != nil {
@@ -85,6 +85,20 @@ func TestMCPLibrary_Tools(t *testing.T) {
 	_ = json.Unmarshal(callOut, &callResp)
 	if len(callResp.Result.Content) == 0 || callResp.Result.Content[0].Text != "success" {
 		t.Errorf("tools/call failed, got: %+v", callResp.Result)
+	}
+
+	// 3. Call forbidden tool should be rejected (no panic on nil handler)
+	forbiddenReq := `{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"forbidden_tool","arguments":{}}}`
+	forbiddenOut, err := srv.HandleMessage(ctx, []byte(forbiddenReq))
+	if err != nil {
+		t.Fatalf("forbidden tool call error: %v", err)
+	}
+	var forbiddenResp struct {
+		Error *mcp.Error `json:"error"`
+	}
+	_ = json.Unmarshal(forbiddenOut, &forbiddenResp)
+	if forbiddenResp.Error == nil || forbiddenResp.Error.Code != mcp.CodeForbidden {
+		t.Errorf("expected forbidden error, got: %s", forbiddenOut)
 	}
 }
 

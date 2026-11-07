@@ -39,9 +39,7 @@ type Response struct {
 	Error   *Error
 }
 
-// MarshalJSON guarantees strict JSON-RPC 2.0 compliance:
-// - On success: "result" field is present (even when empty) and "error" is omitted.
-// - On error: "error" field is present and "result" is omitted.
+// MarshalJSON guarantees strict JSON-RPC 2.0 compliance.
 func (r Response) MarshalJSON() ([]byte, error) {
 	if r.Error != nil {
 		return json.Marshal(struct {
@@ -67,10 +65,10 @@ func (r Response) MarshalJSON() ([]byte, error) {
 
 // InitializeResult represents the outcome of an "initialize" handshake.
 type InitializeResult struct {
-	ProtocolVersion string          `json:"protocolVersion"`
-	Capabilities    Capabilities    `json:"capabilities"`
-	ServerInfo      ServerInfo      `json:"serverInfo"`
-	Instructions    string          `json:"instructions,omitempty"`
+	ProtocolVersion string       `json:"protocolVersion"`
+	Capabilities    Capabilities `json:"capabilities"`
+	ServerInfo      ServerInfo   `json:"serverInfo"`
+	Instructions    string       `json:"instructions,omitempty"`
 }
 
 // Capabilities declare what the server supports.
