@@ -110,3 +110,4 @@ It enables businesses, AI development teams, and external enterprise clients (su
 - **Database**: PostgreSQL 16 (`pgx` / `lib/pq` with versioned migrations)
 - **Cache & Pub/Sub**: Redis 7
 - **Deployment**: Docker, Docker Compose, Kubernetes / Helm
+
